@@ -53,7 +53,7 @@ type testCustomValidator struct {
 
 func TestLoadFromEnvWithValidator(t *testing.T) {
 	os.Clearenv()
-	cfg, err := LoadFromEnv[testCustomValidator](Config{
+	cfg, err := LoadFromEnv(Config[testCustomValidator]{
 		EnvFilePath: "testdata/.uri",
 		UseEnvFile:  true,
 	})
@@ -67,7 +67,7 @@ type testInvalidTags struct {
 }
 
 func TestLoadFromEnvInvalidTags(t *testing.T) {
-	_, err := LoadFromEnv[testInvalidTags](Config{
+	_, err := LoadFromEnv(Config[testInvalidTags]{
 		EnvFilePath: "testdata/.uri",
 		UseEnvFile:  true,
 	})
@@ -83,17 +83,29 @@ type testUnsupportedSlice struct {
 func TestLoadFromEnvUnsupportedSlice(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("CUSTOM", "Hello")
-	_, err := LoadFromEnv[testUnsupportedSlice](Config{
+	_, err := LoadFromEnv(Config[testUnsupportedSlice]{
 		UseEnvFile: false,
 	})
 	if assert.Error(t, err) {
 		assert.Equal(t, "CUSTOM is invalid: []confik.MyCustomType is not supported", err.Error())
 	}
 }
+
+func TestLoadFromEnvWithDefault(t *testing.T) {
+	os.Clearenv()
+	cfg, err := LoadFromEnv(Config[testUnsupportedSlice]{
+		UseEnvFile: false,
+		DefaultValue: &testUnsupportedSlice{
+			Custom: []MyCustomType{{Value: "hello"}},
+		},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "hello", cfg.Custom[0].Value)
+}
 func TestLoadFromEnvEnvFileOverride(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("INT16", "42")
-	cfg, err := LoadFromEnv[testAllTypes](Config{
+	cfg, err := LoadFromEnv(Config[testAllTypes]{
 		UseEnvFile:      true,
 		EnvFileOverride: true,
 	})
@@ -103,7 +115,7 @@ func TestLoadFromEnvEnvFileOverride(t *testing.T) {
 
 func TestLoadFromEnvRequiredFields(t *testing.T) {
 	os.Clearenv()
-	_, err := LoadFromEnv[testAllTypes](Config{
+	_, err := LoadFromEnv[testAllTypes](Config[testAllTypes]{
 		UseEnvFile:      false,
 		EnvFileOverride: false,
 	})
@@ -114,7 +126,7 @@ func TestLoadFromEnvRequiredFields(t *testing.T) {
 
 func TestLoadFromEnvEnvFileNotExist(t *testing.T) {
 	os.Clearenv()
-	_, err := LoadFromEnv[testAllTypes](Config{
+	_, err := LoadFromEnv[testAllTypes](Config[testAllTypes]{
 		UseEnvFile:  true,
 		EnvFilePath: ".fake",
 	})
@@ -125,7 +137,7 @@ func TestLoadFromEnvEnvFileNotExist(t *testing.T) {
 
 func TestLoadFromEnvEnvFileIsDir(t *testing.T) {
 	os.Clearenv()
-	_, err := LoadFromEnv[testAllTypes](Config{
+	_, err := LoadFromEnv[testAllTypes](Config[testAllTypes]{
 		UseEnvFile:  true,
 		EnvFilePath: "testdata/",
 	})

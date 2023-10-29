@@ -6,8 +6,8 @@ import (
 	"reflect"
 )
 
-func LoadFromEnv[T any](cfgs ...Config) (*T, error) {
-	cfg := DefaultConfig
+func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
+	cfg := DefaultConfig[T]()
 	if len(cfgs) > 0 {
 		cfg = cfgs[0]
 	}
@@ -32,8 +32,17 @@ func LoadFromEnv[T any](cfgs ...Config) (*T, error) {
 		// get the environment variable
 		fieldValue, exists := os.LookupEnv(fieldCfg.Name)
 
+		// get a reflected value of the field
+		var rv = reflect.ValueOf(&z).Elem().FieldByName(field.Name)
+		var kind = rv.Kind()
+
 		// return an error if the environment variable doesn't exist and this field is not optional
 		if !fieldCfg.Optional && !exists {
+			if cfg.DefaultValue != nil {
+				var drv = reflect.ValueOf(cfg.DefaultValue).Elem().FieldByName(field.Name)
+				rv.Set(drv)
+				continue
+			}
 			return nil, fmt.Errorf("environment variable %s does not exist", fieldCfg.Name)
 		}
 
@@ -49,9 +58,6 @@ func LoadFromEnv[T any](cfgs ...Config) (*T, error) {
 			}
 		}
 
-		// get a reflected value of the field
-		var rv = reflect.ValueOf(&z).Elem().FieldByName(field.Name)
-		var kind = rv.Kind()
 		if kind == reflect.Slice {
 			err := handleSlice(fieldCfg, fieldValue, rv)
 			if err != nil {

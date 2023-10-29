@@ -27,7 +27,7 @@ type CustomConverterType struct {
 func TestLoadFromEnvCustomConverter(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("MY_FIELD", "hello")
-	custom, err := LoadFromEnv[CustomConverterType](Config{
+	custom, err := LoadFromEnv[CustomConverterType](Config[CustomConverterType]{
 		UseEnvFile: false,
 		CustomConverters: map[reflect.Type]TypeConverter{
 			reflect.TypeOf(MyCustomType{}): handleMyCustomType,

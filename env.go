@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func LoadEnvFile(cfg Config) (map[string]string, error) {
+func LoadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
 	// find the .env file
 	//
 	var envPath string

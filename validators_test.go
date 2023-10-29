@@ -19,7 +19,7 @@ type CustomValidatorType struct {
 func TestLoadFromEnvCustomValidator(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("MY_FIELD", "test")
-	_, err := LoadFromEnv[CustomValidatorType](Config{
+	_, err := LoadFromEnv(Config[CustomValidatorType]{
 		UseEnvFile: false,
 		CustomValidators: map[string]FieldValidator{
 			"custom": customValidator,

@@ -14,7 +14,7 @@ type FieldConfig struct {
 	Validator FieldValidator
 }
 
-func NewFieldConfig(cfg Config, name string, tag string) (*FieldConfig, error) {
+func NewFieldConfig[T any](cfg Config[T], name string, tag string) (*FieldConfig, error) {
 	envName, err := fieldNameToEnvironmentVariable(name)
 	if err != nil {
 		return nil, err
