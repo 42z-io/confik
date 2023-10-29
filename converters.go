@@ -13,6 +13,15 @@ func convertError(envName string, value string, kind reflect.Kind, err error) er
 
 type TypeConverter = func(fc *FieldConfig, fieldValue string, rv reflect.Value) error
 
+func handleUint(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+	i, err := strconv.ParseUint(fieldValue, 10, strconv.IntSize)
+	if err != nil {
+		return convertError(fc.Name, fieldValue, reflect.Uint, err)
+	}
+	rv.SetUint(i)
+	return nil
+}
+
 func handleUint8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, 8)
 	if err != nil {
@@ -44,6 +53,15 @@ func handleUint64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 		return convertError(fc.Name, fieldValue, reflect.Uint64, err)
 	}
 	rv.SetUint(i)
+	return nil
+}
+
+func handleInt(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+	i, err := strconv.ParseInt(fieldValue, 10, strconv.IntSize)
+	if err != nil {
+		return convertError(fc.Name, fieldValue, reflect.Int, err)
+	}
+	rv.SetInt(i)
 	return nil
 }
 
@@ -118,20 +136,33 @@ func handleString(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleStringSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
-	if rv.Type() != reflect.SliceOf(reflect.TypeOf(fieldValue)) {
-		return fmt.Errorf("%s is invalid: only string slices are supported", fc.Name)
+func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+	strSlice := strings.Split(fieldValue, ",")
+	var unsliced = rv.Type().Elem()
+	converter, exists := typeConverters[unsliced.Kind()]
+	if !exists {
+		return fmt.Errorf("%s is invalid: %s is not supported", fc.Name, rv.Type())
 	}
-	slice := strings.Split(fieldValue, ",")
-	rv.Set(reflect.ValueOf(slice))
+	var data = reflect.MakeSlice(rv.Type(), 0, len(strSlice))
+	for _, v := range strSlice {
+		rv2 := reflect.New(unsliced).Elem()
+		err := converter(fc, v, rv2)
+		if err != nil {
+			return err
+		}
+		data = reflect.Append(data, rv2)
+	}
+	rv.Set(data)
 	return nil
 }
 
 var typeConverters = map[reflect.Kind]TypeConverter{
+	reflect.Uint:    handleUint,
 	reflect.Uint8:   handleUint8,
 	reflect.Uint16:  handleUint16,
 	reflect.Uint32:  handleUint32,
 	reflect.Uint64:  handleUint64,
+	reflect.Int:     handleInt,
 	reflect.Int8:    handleInt8,
 	reflect.Int16:   handleInt16,
 	reflect.Int32:   handleInt32,
@@ -140,5 +171,4 @@ var typeConverters = map[reflect.Kind]TypeConverter{
 	reflect.Float64: handleFloat64,
 	reflect.Bool:    handleBool,
 	reflect.String:  handleString,
-	reflect.Slice:   handleStringSlice,
 }

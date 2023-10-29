@@ -187,6 +187,21 @@ func TestNewEnvReaderInvalidTags(t *testing.T) {
 		assert.Equal(t, "invalid struct tag on Invalid: invalid environment variable name: @@ must be [A-Z0-9_]+", err.Error())
 	}
 }
+
+type MyTestConfigUnsupportedSlice struct {
+	Custom []MyCustomType
+}
+
+func TestNewEnvReaderUnsupportedSlice(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("CUSTOM", "Hello")
+	_, err := NewEnvReader[MyTestConfigUnsupportedSlice](Config{
+		UseEnvFile: false,
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "CUSTOM is invalid: []confik.MyCustomType is not supported", err.Error())
+	}
+}
 func TestNewEnvReaderOverride(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("INT16", "42")

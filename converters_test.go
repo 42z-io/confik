@@ -234,7 +234,7 @@ func TestStringSlice(t *testing.T) {
 	fc := &FieldConfig{
 		Name: "test",
 	}
-	err := handleStringSlice(fc, "string1,string2", rv)
+	err := handleSlice(fc, "string1,string2", rv)
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"string1", "string2"}, res)
 }
@@ -245,8 +245,7 @@ func TestIntSlice(t *testing.T) {
 	fc := &FieldConfig{
 		Name: "test",
 	}
-	err := handleStringSlice(fc, "1,2", rv)
-	if assert.Error(t, err) {
-		assert.Equal(t, "test is invalid: only string slices are supported", err.Error())
-	}
+	err := handleSlice(fc, "1,2", rv)
+	assert.Nil(t, err)
+	assert.Equal(t, []int{1, 2}, res)
 }

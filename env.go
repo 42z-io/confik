@@ -165,16 +165,23 @@ func NewEnvReader[T any](cfgs ...Config) (*T, error) {
 		}
 		var rv = reflect.ValueOf(&z).Elem().FieldByName(field.Name)
 		var kind = rv.Kind()
-		converter, exists1 := typeConverters[kind]
-		customConverter, exists2 := cfg.CustomConverters[rv.Type()]
-		if customConverter != nil {
-			converter = customConverter
-		}
-		if !exists1 && !exists2 {
-			return nil, fmt.Errorf("field %s of type %s is not supported", field.Name, field.Type)
-		}
-		if err = converter(fieldCfg, fieldValue, rv); err != nil {
-			return nil, err
+		if kind == reflect.Slice {
+			err := handleSlice(fieldCfg, fieldValue, rv)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			converter, exists1 := typeConverters[kind]
+			customConverter, exists2 := cfg.CustomConverters[rv.Type()]
+			if customConverter != nil {
+				converter = customConverter
+			}
+			if !exists1 && !exists2 {
+				return nil, fmt.Errorf("field %s of type %s is not supported", field.Name, field.Type)
+			}
+			if err = converter(fieldCfg, fieldValue, rv); err != nil {
+				return nil, err
+			}
 		}
 
 	}
