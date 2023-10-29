@@ -26,10 +26,10 @@ type testAllTypes struct {
 	Optional    bool    `env:"OPTIONAL,optional"`
 }
 
-func TestNewEnvReader(t *testing.T) {
+func TestLoadFromEnv(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("INT16", "42")
-	cfg, err := NewEnvReader[testAllTypes]()
+	cfg, err := LoadFromEnv[testAllTypes]()
 	assert.Nil(t, err)
 	assert.Equal(t, true, cfg.ABool)
 	assert.Equal(t, "A custom name", cfg.CustomName)
@@ -51,9 +51,9 @@ type testCustomValidator struct {
 	Optional bool   `env:"OPTIONAL,optional"`
 }
 
-func TestNewEnvReaderWithValidator(t *testing.T) {
+func TestLoadFromEnvWithValidator(t *testing.T) {
 	os.Clearenv()
-	cfg, err := NewEnvReader[testCustomValidator](Config{
+	cfg, err := LoadFromEnv[testCustomValidator](Config{
 		EnvFilePath: "testdata/.uri",
 		UseEnvFile:  true,
 	})
@@ -66,8 +66,8 @@ type testInvalidTags struct {
 	Invalid string `env:"@@,uri"`
 }
 
-func TestNewEnvReaderInvalidTags(t *testing.T) {
-	_, err := NewEnvReader[testInvalidTags](Config{
+func TestLoadFromEnvInvalidTags(t *testing.T) {
+	_, err := LoadFromEnv[testInvalidTags](Config{
 		EnvFilePath: "testdata/.uri",
 		UseEnvFile:  true,
 	})
@@ -80,20 +80,20 @@ type testUnsupportedSlice struct {
 	Custom []MyCustomType
 }
 
-func TestNewEnvReaderUnsupportedSlice(t *testing.T) {
+func TestLoadFromEnvUnsupportedSlice(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("CUSTOM", "Hello")
-	_, err := NewEnvReader[testUnsupportedSlice](Config{
+	_, err := LoadFromEnv[testUnsupportedSlice](Config{
 		UseEnvFile: false,
 	})
 	if assert.Error(t, err) {
 		assert.Equal(t, "CUSTOM is invalid: []confik.MyCustomType is not supported", err.Error())
 	}
 }
-func TestNewEnvReaderEnvFileOverride(t *testing.T) {
+func TestLoadFromEnvEnvFileOverride(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("INT16", "42")
-	cfg, err := NewEnvReader[testAllTypes](Config{
+	cfg, err := LoadFromEnv[testAllTypes](Config{
 		UseEnvFile:      true,
 		EnvFileOverride: true,
 	})
@@ -101,9 +101,9 @@ func TestNewEnvReaderEnvFileOverride(t *testing.T) {
 	assert.Equal(t, int16(-32768), cfg.Aint16)
 }
 
-func TestNewEnvReaderRequiredFields(t *testing.T) {
+func TestLoadFromEnvRequiredFields(t *testing.T) {
 	os.Clearenv()
-	_, err := NewEnvReader[testAllTypes](Config{
+	_, err := LoadFromEnv[testAllTypes](Config{
 		UseEnvFile:      false,
 		EnvFileOverride: false,
 	})
@@ -112,9 +112,9 @@ func TestNewEnvReaderRequiredFields(t *testing.T) {
 	}
 }
 
-func TestNewEnvReaderEnvFileNotExist(t *testing.T) {
+func TestLoadFromEnvEnvFileNotExist(t *testing.T) {
 	os.Clearenv()
-	_, err := NewEnvReader[testAllTypes](Config{
+	_, err := LoadFromEnv[testAllTypes](Config{
 		UseEnvFile:  true,
 		EnvFilePath: ".fake",
 	})
@@ -123,9 +123,9 @@ func TestNewEnvReaderEnvFileNotExist(t *testing.T) {
 	}
 }
 
-func TestNewEnvReaderEnvFileIsDir(t *testing.T) {
+func TestLoadFromEnvEnvFileIsDir(t *testing.T) {
 	os.Clearenv()
-	_, err := NewEnvReader[testAllTypes](Config{
+	_, err := LoadFromEnv[testAllTypes](Config{
 		UseEnvFile:  true,
 		EnvFilePath: "testdata/",
 	})
@@ -134,7 +134,7 @@ func TestNewEnvReaderEnvFileIsDir(t *testing.T) {
 	}
 }
 
-func TestNewEnvReaderFoundEnvIsDir(t *testing.T) {
+func TestLoadFromEnvFoundEnvIsDir(t *testing.T) {
 	os.Clearenv()
 	cwd, _ := os.Getwd()
 	target := "testdata/folder1/folder2/folder3/folder4"
@@ -142,7 +142,7 @@ func TestNewEnvReaderFoundEnvIsDir(t *testing.T) {
 	defer func() {
 		os.Chdir(cwd)
 	}()
-	_, err := NewEnvReader[testAllTypes]()
+	_, err := LoadFromEnv[testAllTypes]()
 	if assert.Error(t, err) {
 		assert.Equal(t, fmt.Sprintf("environment file is a directory: %s", filepath.Join(cwd, target, ".env")), err.Error())
 	}

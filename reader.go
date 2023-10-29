@@ -6,13 +6,13 @@ import (
 	"reflect"
 )
 
-func NewEnvReader[T any](cfgs ...Config) (*T, error) {
+func LoadFromEnv[T any](cfgs ...Config) (*T, error) {
 	cfg := DefaultConfig
 	if len(cfgs) > 0 {
 		cfg = cfgs[0]
 	}
 
-	// Attempt to find and load the .env file
+	// attempt to find and load the ".env" file
 	if cfg.UseEnvFile {
 		_, err := LoadEnvFile(cfg)
 		if err != nil {
@@ -22,23 +22,34 @@ func NewEnvReader[T any](cfgs ...Config) (*T, error) {
 
 	var z T
 	var t = reflect.TypeOf(z)
+
+	// iterate over all the visible fields on the struct
 	for _, field := range reflect.VisibleFields(t) {
 		fieldCfg, err := NewFieldConfig(cfg, field.Name, string(field.Tag))
 		if err != nil {
 			return nil, err
 		}
+		// get the environment variable
 		fieldValue, exists := os.LookupEnv(fieldCfg.Name)
+
+		// return an error if the environment variable doesn't exist and this field is not optional
 		if !fieldCfg.Optional && !exists {
 			return nil, fmt.Errorf("environment variable %s does not exist", fieldCfg.Name)
 		}
+
+		// skip to the next field if we cant find the environment variable
 		if !exists {
 			continue
 		}
+
+		// run validation on the environment variable (if any)
 		if fieldCfg.Validator != nil {
 			if err = fieldCfg.Validator(fieldCfg.Name, fieldValue); err != nil {
 				return nil, err
 			}
 		}
+
+		// get a reflected value of the field
 		var rv = reflect.ValueOf(&z).Elem().FieldByName(field.Name)
 		var kind = rv.Kind()
 		if kind == reflect.Slice {
@@ -47,14 +58,19 @@ func NewEnvReader[T any](cfgs ...Config) (*T, error) {
 				return nil, err
 			}
 		} else {
-			converter, exists1 := typeConverters[kind]
-			customConverter, exists2 := cfg.CustomConverters[rv.Type()]
+			// check and see if there is a converter for kind of value this field has
+			converter, converterExists := kindConverters[kind]
+			customConverter, customConverterExists := cfg.CustomConverters[rv.Type()]
 			if customConverter != nil {
 				converter = customConverter
 			}
-			if !exists1 && !exists2 {
+
+			// if there is no standard converter, and no user provided convert return an error
+			if !converterExists && !customConverterExists {
 				return nil, fmt.Errorf("field %s of type %s is not supported", field.Name, field.Type)
 			}
+
+			// convert the value from a string to the fields type
 			if err = converter(fieldCfg, fieldValue, rv); err != nil {
 				return nil, err
 			}

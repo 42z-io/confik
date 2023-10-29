@@ -16,10 +16,10 @@ type CustomValidatorType struct {
 	MyField string `env:"MY_FIELD,custom"`
 }
 
-func TestNewEnvReaderCustomValidator(t *testing.T) {
+func TestLoadFromEnvCustomValidator(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("MY_FIELD", "test")
-	_, err := NewEnvReader[CustomValidatorType](Config{
+	_, err := LoadFromEnv[CustomValidatorType](Config{
 		UseEnvFile: false,
 		CustomValidators: map[string]FieldValidator{
 			"custom": customValidator,

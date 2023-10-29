@@ -24,10 +24,10 @@ type CustomConverterType struct {
 	MyField MyCustomType
 }
 
-func TestNewEnvReaderCustomConverter(t *testing.T) {
+func TestLoadFromEnvCustomConverter(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("MY_FIELD", "hello")
-	custom, err := NewEnvReader[CustomConverterType](Config{
+	custom, err := LoadFromEnv[CustomConverterType](Config{
 		UseEnvFile: false,
 		CustomConverters: map[reflect.Type]TypeConverter{
 			reflect.TypeOf(MyCustomType{}): handleMyCustomType,

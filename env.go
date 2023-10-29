@@ -23,12 +23,13 @@ func LoadEnvFile(cfg Config) (map[string]string, error) {
 		envPath = cfg.EnvFilePath
 	}
 
-	// No .env found - return empty
+	// No .env found or provided - return empty map
 	if envPath == "" {
 		envMap := make(map[string]string)
 		return envMap, nil
 	}
 
+	// Check if the .env file exists and is not a directory
 	stat, err := os.Stat(envPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -40,17 +41,19 @@ func LoadEnvFile(cfg Config) (map[string]string, error) {
 		return nil, fmt.Errorf("environment file is a directory: %s", envPath)
 	}
 
+	// Open and parse the env file
 	file, err := os.Open(envPath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	kv, err := ParseEnvFile(scanner)
 	if err != nil {
 		return nil, err
 	}
+
+	// Add the discovered environment variables in the .env to the environment
 	for k, v := range kv {
 		_, exists := os.LookupEnv(k)
 		if cfg.EnvFileOverride || !exists {
@@ -61,6 +64,7 @@ func LoadEnvFile(cfg Config) (map[string]string, error) {
 }
 
 func FindEnvFile() (string, error) {
+	// Start looking for the ".env" in the current directory
 	path, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -69,48 +73,64 @@ func FindEnvFile() (string, error) {
 	for {
 		var checkPath = filepath.Join(path, ".env")
 		stat, err := os.Stat(checkPath)
+		// If we cant find the ".env" in this directory look in the parent directory
 		if os.IsNotExist(err) {
 			path = filepath.Dir(path)
 			if path == lastPath {
 				return "", nil
 			}
 			lastPath = path
-		} else if stat.IsDir() {
-			return "", fmt.Errorf("environment file is a directory: %s", checkPath)
 		} else if err != nil {
 			return "", err
+		} else if stat.IsDir() {
+			return "", fmt.Errorf("environment file is a directory: %s", checkPath)
 		} else {
 			return checkPath, nil
 		}
 	}
 }
 
+func parseEnvironmentVariableExpression(expression string) (string, string, error) {
+	// ensure format of the expression is correct
+	if !strings.Contains(expression, "=") {
+		return "", "", fmt.Errorf("invalid expression in env file: %s", expression)
+	}
+
+	// split the variable NAME=value [NAME, value]
+	parts := strings.SplitN(expression, "=", 2)
+	variable := strings.Trim(parts[0], " ")
+
+	// handle VARIABLE=
+	if len(parts) == 1 {
+		return variable, "", nil
+	}
+
+	// remove any quotes
+	unquoted, err := strconv.Unquote(parts[1])
+	if err != nil {
+		return variable, parts[1], nil
+	}
+	return variable, unquoted, nil
+}
+
 func ParseEnvFile(scanner *bufio.Scanner) (map[string]string, error) {
+	// map to store all the key => value pairs we find in the ".env" file
 	kv := make(map[string]string)
 	for scanner.Scan() {
-		line := scanner.Text()
+		expression := scanner.Text()
+		// TODO handle other whitespace
 		// ignore comments and blank lines
-		if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") || strings.Trim(line, " ") == "" {
+		if strings.HasPrefix(expression, "#") || strings.HasPrefix(expression, "//") || strings.Trim(expression, " ") == "" {
 			continue
 		}
-		// ensure is in a variable format (VARIABLE=value)
-		if !strings.Contains(line, "=") {
-			return nil, fmt.Errorf("invalid line in env file: %s", line)
+
+		// parse the environment variable
+		key, value, err := parseEnvironmentVariableExpression(expression)
+		if err != nil {
+			return nil, err
 		}
-		var key, value string
-		parts := strings.SplitN(line, "=", 2)
-		key = parts[0]
-		if len(parts) == 1 {
-			value = ""
-		} else {
-			unquoted, err := strconv.Unquote(parts[1])
-			if err != nil {
-				value = parts[1]
-			} else {
-				value = unquoted
-			}
-		}
-		kv[key] = strings.Trim(value, " ")
+		// update the store
+		kv[strings.Trim(key, " ")] = strings.Trim(value, " ")
 	}
 	return kv, nil
 }

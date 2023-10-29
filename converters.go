@@ -139,7 +139,7 @@ func handleString(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	strSlice := strings.Split(fieldValue, ",")
 	var unsliced = rv.Type().Elem()
-	converter, exists := typeConverters[unsliced.Kind()]
+	converter, exists := kindConverters[unsliced.Kind()]
 	if !exists {
 		return fmt.Errorf("%s is invalid: %s is not supported", fc.Name, rv.Type())
 	}
@@ -156,7 +156,7 @@ func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-var typeConverters = map[reflect.Kind]TypeConverter{
+var kindConverters = map[reflect.Kind]TypeConverter{
 	reflect.Uint:    handleUint,
 	reflect.Uint8:   handleUint8,
 	reflect.Uint16:  handleUint16,
