@@ -84,14 +84,16 @@ func parseEnvTag(tagStr string) (*ConfigTag, error) {
 	}
 
 	for settingName, settingValue := range tag.Settings {
+		var settingValueC = strings.Clone(settingValue)
 		switch settingName {
 		case "validate":
-			configTag.Validator = &settingValue
+			configTag.Validator = &settingValueC
 		case "default":
-			configTag.Default = &settingValue
+			configTag.Default = &settingValueC
 		default:
 			return nil, fmt.Errorf("invalid env tag: unknown setting %s", settingName)
 		}
 	}
+
 	return &configTag, nil
 }
