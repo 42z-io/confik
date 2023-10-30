@@ -56,7 +56,7 @@ func validateCidr(envName string, value string) error {
 func validateFile(envName string, value string) error {
 	stat, err := os.Stat(value)
 	if err != nil {
-		return fmt.Errorf("%s=%s is not a valid file: %w", envName, value, err)
+		return fmt.Errorf("%s=%s is not a valid file", envName, value)
 	}
 	if stat.IsDir() {
 		return fmt.Errorf("%s=%s exists but is not a file", envName, value)
@@ -67,7 +67,7 @@ func validateFile(envName string, value string) error {
 func validateDir(envName string, value string) error {
 	stat, err := os.Stat(value)
 	if err != nil {
-		return fmt.Errorf("%s=%s is not a valid directory: %w", envName, value, err)
+		return fmt.Errorf("%s=%s is not a valid directory", envName, value)
 	}
 	if !stat.IsDir() {
 		return fmt.Errorf("%s=%s exists but is not a directory", envName, value)
