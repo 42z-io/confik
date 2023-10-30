@@ -47,8 +47,8 @@ func LoadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
 		return nil, err
 	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	kv, err := ParseEnvFile(scanner)
+
+	kv, err := ParseEnvFile(bufio.NewScanner(file))
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +113,8 @@ func ParseEnvFile(scanner *bufio.Scanner) (map[string]string, error) {
 	kv := make(map[string]string)
 	for scanner.Scan() {
 		expression := scanner.Text()
-		// TODO handle other whitespace
 		// ignore comments and blank lines
-		if strings.HasPrefix(expression, "#") || strings.HasPrefix(expression, "//") || strings.Trim(expression, " ") == "" {
+		if strings.HasPrefix(expression, "#") || strings.HasPrefix(expression, "//") || strings.TrimSpace(expression) == "" {
 			continue
 		}
 
@@ -125,7 +124,7 @@ func ParseEnvFile(scanner *bufio.Scanner) (map[string]string, error) {
 			return nil, err
 		}
 		// update the store
-		kv[strings.Trim(key, " ")] = strings.Trim(value, " ")
+		kv[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}
 	return kv, nil
 }

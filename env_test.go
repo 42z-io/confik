@@ -74,8 +74,8 @@ func TestParseEnvFile(t *testing.T) {
 	input := `
 // Comment
 TC_UNQUOTED=1
-TC_QUOTED="hello world"
-TC_SPACES=hello world
+	TC_QUOTED="hello world"
+ TC_SPACES = hello world
 TC_LONG_NAME_1=test
 # Comment
 
