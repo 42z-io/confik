@@ -110,7 +110,7 @@ func TestValidatorCidr(t *testing.T) {
 func TestValidateFile(t *testing.T) {
 	err := validateFile("MY_VAR", ".fakeFile")
 	if assert.Error(t, err) {
-		assert.Equal(t, "MY_VAR=.fakeFile is not a valid file: CreateFile .fakeFile: The system cannot find the file specified.", err.Error())
+		assert.Equal(t, "MY_VAR=.fakeFile is not a valid file", err.Error())
 	}
 	err = validateFile("MY_VAR", "testdata/")
 	if assert.Error(t, err) {
@@ -124,7 +124,7 @@ func TestValidateFile(t *testing.T) {
 func TestValidateDir(t *testing.T) {
 	err := validateDir("MY_VAR", ".fakeFile")
 	if assert.Error(t, err) {
-		assert.Equal(t, "MY_VAR=.fakeFile is not a valid directory: CreateFile .fakeFile: The system cannot find the file specified.", err.Error())
+		assert.Equal(t, "MY_VAR=.fakeFile is not a valid directory", err.Error())
 	}
 	err = validateDir("MY_VAR", ".env")
 	if assert.Error(t, err) {
