@@ -187,9 +187,9 @@ func parseDuration(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 }
 
 var typeParsers = map[reflect.Type]Parser{
-	reflect.TypeOf(url.URL{}):          parseUrl,
-	reflect.TypeOf(time.Time{}):        parseTime,
-	reflect.TypeOf([0]time.Duration{}): parseDuration,
+	reflect.TypeOf((*url.URL)(nil)).Elem():       parseUrl,
+	reflect.TypeOf((*time.Time)(nil)).Elem():     parseTime,
+	reflect.TypeOf((*time.Duration)(nil)).Elem(): parseDuration,
 }
 
 var kindParsers = map[reflect.Kind]Parser{
