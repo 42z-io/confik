@@ -10,11 +10,12 @@ import (
 	"time"
 )
 
+// Parser is the type a function must implement to provide type conversion for types.
+type Parser = func(fc *FieldConfig, fieldValue string, rv reflect.Value) error
+
 func convertError(envName string, value string, kind reflect.Kind, err error) error {
 	return fmt.Errorf("%s=%s is not a valid %s: %w", envName, value, kind, err)
 }
-
-type Parser = func(fc *FieldConfig, fieldValue string, rv reflect.Value) error
 
 func parseUint(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, strconv.IntSize)

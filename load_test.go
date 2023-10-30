@@ -5,7 +5,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
+	"unicode"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -272,6 +274,124 @@ func BenchmarkLoadFromEnvDefault(b *testing.B) {
 			panic(err)
 		}
 	}
+}
+
+func Example() {
+	os.Clearenv()
+	os.Setenv("NAME", "Bob")
+	os.Setenv("AGE", "20")
+	os.Setenv("HEIGHT", "5.3")
+	type ExampleConfig struct {
+		Name   string
+		Age    uint8 `env:"AGE,optional"`
+		Height float32
+	}
+
+	cfg, _ := LoadFromEnv(Config[ExampleConfig]{
+		UseEnvFile: false,
+	})
+
+	fmt.Println(cfg.Name)
+	fmt.Println(cfg.Age)
+	fmt.Println(cfg.Height)
+	// Output: Bob
+	// 20
+	// 5.3
+}
+
+func Example_customValidator() {
+	os.Clearenv()
+	os.Setenv("NAME", "Bob")
+	os.Setenv("AGE", "20")
+	os.Setenv("HEIGHT", "5.3")
+	type ExampleConfig struct {
+		Name   string `env:"NAME,validate=uppercase"`
+		Age    uint8  `env:"AGE,optional"`
+		Height float32
+	}
+
+	_, err := LoadFromEnv(Config[ExampleConfig]{
+		UseEnvFile: false,
+		Validators: map[string]Validator{
+			"uppercase": func(envName, value string) error {
+				for _, c := range value {
+					if !unicode.IsUpper(c) {
+						return fmt.Errorf("%s must be uppercase", envName)
+					}
+				}
+				return nil
+			},
+		},
+	})
+
+	fmt.Println(err.Error())
+	// Output: NAME must be uppercase
+}
+
+func Example_customParser() {
+	os.Clearenv()
+	os.Setenv("NAME", "Bob")
+	os.Setenv("AGE", "20")
+	os.Setenv("HEIGHT", "5.3")
+
+	type MyName struct {
+		Name string
+	}
+	type ExampleConfig struct {
+		Name   MyName `env:"NAME"`
+		Age    uint8  `env:"AGE,optional"`
+		Height float32
+	}
+
+	cfg, _ := LoadFromEnv(Config[ExampleConfig]{
+		UseEnvFile: false,
+		Parsers: map[reflect.Type]Parser{
+			reflect.TypeOf((*MyName)(nil)).Elem(): func(fieldConfig *FieldConfig, fieldValue string, rv reflect.Value) error {
+				name := MyName{
+					Name: fieldValue,
+				}
+
+				rv.Set(reflect.ValueOf(name))
+				return nil
+			},
+		},
+	})
+
+	fmt.Println(cfg.Name.Name)
+	// Output: Bob
+}
+
+func Example_defaultTag() {
+	os.Clearenv()
+
+	type ExampleConfig struct {
+		Age uint8 `env:"AGE,default=30"`
+	}
+
+	cfg, _ := LoadFromEnv(Config[ExampleConfig]{
+		UseEnvFile: false,
+	})
+
+	fmt.Println(cfg.Age)
+	// Output: 30
+}
+
+func Example_defaultValue() {
+	os.Clearenv()
+
+	type ExampleConfig struct {
+		Age uint8 `env:"AGE"`
+	}
+
+	cfg, _ := LoadFromEnv(Config[ExampleConfig]{
+		UseEnvFile: false,
+		DefaultValue: &ExampleConfig{
+			Age: 31,
+		},
+	})
+
+	fmt.Println(cfg.Age)
+	// Output: 31
 }
 
 type benchOptional struct {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// Validator is the type a function must implement to provide string validation on environment variables.
 type Validator = func(envName, value string) error
 
 func validateUri(envName string, value string) error {

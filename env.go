@@ -3,18 +3,20 @@ package confik
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func LoadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
-	// find the .env file
-	//
+// loadEnvFile will locate and load the environment file into a map[string]string
+//
+// loadEnvFile will update the current environment with the files found in the environment file
+func loadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
 	var envPath string
 	if cfg.EnvFilePath == "" {
-		foundPath, err := FindEnvFile()
+		foundPath, err := findEnvFile()
 		if err != nil {
 			return nil, err
 		}
@@ -23,13 +25,13 @@ func LoadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
 		envPath = cfg.EnvFilePath
 	}
 
-	// No .env found or provided - return empty map
+	// no .env found or provided - return empty map
 	if envPath == "" {
 		envMap := make(map[string]string)
 		return envMap, nil
 	}
 
-	// Check if the .env file exists and is not a directory
+	// check if the .env file exists
 	stat, err := os.Stat(envPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -37,23 +39,25 @@ func LoadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
 		}
 		return nil, err
 	}
+
+	// check if the .env file is a directory
 	if stat.IsDir() {
 		return nil, fmt.Errorf("environment file is a directory: %s", envPath)
 	}
 
-	// Open and parse the env file
+	// open and parse the env file
 	file, err := os.Open(envPath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	kv, err := ParseEnvFile(bufio.NewScanner(file))
+	kv, err := parseEnvFile(file)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add the discovered environment variables in the .env to the environment
+	// add the discovered environment variables in the environment file to the environment
 	for k, v := range kv {
 		_, exists := os.LookupEnv(k)
 		if cfg.EnvFileOverride || !exists {
@@ -63,7 +67,8 @@ func LoadEnvFile[T any](cfg Config[T]) (map[string]string, error) {
 	return kv, nil
 }
 
-func FindEnvFile() (string, error) {
+// findEnvFile will locate the .env file by looking in the current directory and recursing up the directory structure
+func findEnvFile() (string, error) {
 	// Start looking for the ".env" in the current directory
 	path, err := os.Getwd()
 	if err != nil {
@@ -90,7 +95,8 @@ func FindEnvFile() (string, error) {
 	}
 }
 
-func parseEnvironmentVariableExpression(expression string) (string, string, error) {
+// parseEnvVar will parse an environment variable in the format NAME=VALUE.
+func parseEnvVar(expression string) (string, string, error) {
 	// ensure format of the expression is correct
 	if !strings.Contains(expression, "=") {
 		return "", "", fmt.Errorf("invalid expression in env file: %s", expression)
@@ -108,7 +114,20 @@ func parseEnvironmentVariableExpression(expression string) (string, string, erro
 	return variable, unquoted, nil
 }
 
-func ParseEnvFile(scanner *bufio.Scanner) (map[string]string, error) {
+// parseEnvFile will convert an environment file into a map[string]string
+//
+// Expects the file in the format:
+//
+//	MY_VARIABLE=MY_NAME
+//	OTHER_VARIABLE="QUOTED_VALUE"
+//
+// Notes:
+//   - Quoted values will be unquoted
+//   - Blank lines will be ingored
+//   - Comments (starting with // or #) will be ignored
+//   - Whitespace around variables and their values will be stripped
+func parseEnvFile(reader io.Reader) (map[string]string, error) {
+	scanner := bufio.NewScanner(reader)
 	// map to store all the key => value pairs we find in the ".env" file
 	kv := make(map[string]string)
 	for scanner.Scan() {
@@ -118,11 +137,11 @@ func ParseEnvFile(scanner *bufio.Scanner) (map[string]string, error) {
 			continue
 		}
 
-		// parse the environment variable
-		key, value, err := parseEnvironmentVariableExpression(expression)
+		key, value, err := parseEnvVar(expression)
 		if err != nil {
 			return nil, err
 		}
+
 		// update the store
 		kv[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}

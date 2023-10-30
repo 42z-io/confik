@@ -5,20 +5,22 @@ import (
 	"strings"
 )
 
-type Tag struct {
+type tag struct {
 	Name     string
 	Flags    []string
 	Settings map[string]string
 }
 
+// ConfigTag represents the name, flags and settings on the struct field.
 type ConfigTag struct {
-	Name      string
-	Validator *string
-	Optional  bool
-	Default   *string
-	Unset     bool
+	Name      string  // name of the environment variable
+	Validator *string // field validator name
+	Optional  bool    // is the environment variable optional?
+	Default   *string // default value to use if the environment variable does not exist
+	Unset     bool    // clear the environment variable after load?
 }
 
+// NewConfigTag will create a new [ConfigTag] with the default values.
 func NewConfigTag(name string) ConfigTag {
 	return ConfigTag{
 		Name:      name,
@@ -37,12 +39,12 @@ func parseSetting(expressionStr string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func parseTag(tagStr string) (*Tag, error) {
+func parseTag(tagStr string) (*tag, error) {
 	if len(tagStr) == 0 {
 		return nil, fmt.Errorf("invalid tag: empty tag")
 	}
 	parts := strings.Split(tagStr, ",")
-	var tag Tag
+	var tag tag
 	tag.Name = parts[0]
 	tag.Settings = make(map[string]string)
 	tag.Flags = make([]string, 0)

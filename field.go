@@ -7,11 +7,13 @@ import (
 	"unicode"
 )
 
+// FieldConfig is the representation of the configuration for a field within a struct (after tags have been parsed).
 type FieldConfig struct {
-	ConfigTag
-	Validate *Validator
+	ConfigTag            // the configuration specified in the tag
+	Validate  *Validator // the custom validator for this field
 }
 
+// merge two maps together into a new map.
 func mergeMap[T comparable, V any](a map[T]V, b map[T]V) map[T]V {
 	merged := make(map[T]V)
 	for k, v := range a {
@@ -23,7 +25,8 @@ func mergeMap[T comparable, V any](a map[T]V, b map[T]V) map[T]V {
 	return merged
 }
 
-func NewFieldConfig[T any](cfg Config[T], rv reflect.StructField) (*FieldConfig, error) {
+// newFieldConfig will create a new FieldConfig for the given [reflect.StructField].
+func newFieldConfig[T any](cfg Config[T], rv reflect.StructField) (*FieldConfig, error) {
 	var fieldConfig FieldConfig
 	tagStr := rv.Tag.Get("env")
 	if tagStr != "" {
@@ -40,7 +43,7 @@ func NewFieldConfig[T any](cfg Config[T], rv reflect.StructField) (*FieldConfig,
 
 	validators := mergeMap(fieldValidators, cfg.Validators)
 
-	validatorName := fieldConfig.ConfigTag.Validator
+	validatorName := fieldConfig.Validator
 	if validatorName != nil {
 		validator, exists := validators[*validatorName]
 		if !exists {
@@ -51,6 +54,7 @@ func NewFieldConfig[T any](cfg Config[T], rv reflect.StructField) (*FieldConfig,
 	return &fieldConfig, nil
 }
 
+// verifyEnvName will ensure that a variable is in a suitable format for an environment variable.
 func verifyEnvName(name string) error {
 	if len(name) == 0 {
 		return fmt.Errorf("invalid environment variable name: %s must be [A-Z0-9_]+", name)
@@ -63,6 +67,7 @@ func verifyEnvName(name string) error {
 	return nil
 }
 
+// toEnvName will take a field name and convert it into a format sutiable for an environment variable.
 func toEnvName(name string) string {
 	// split at capitalization, case change, or numbers
 	var sb strings.Builder

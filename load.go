@@ -1,3 +1,73 @@
+// [confik] will build structs from environment files and variables.
+//
+// [confik] works by reading special struct tags on your fields.
+//
+// # Supported Types
+//
+//   - uint
+//   - uint8
+//   - uint16
+//   - uint32
+//   - uint64
+//   - int
+//   - int8
+//   - int16
+//   - int32
+//   - int64
+//   - float32
+//   - float64
+//   - bool
+//   - [time.Duration]
+//   - [time.Time]
+//   - [url.URL]
+//
+// # Tag Options
+//
+// You can control how each field is configured through struct tags under the "env" key.
+//
+// Tags are specified like such:
+//
+//	type MyStruct struct {
+//	  Name: `env:"NAME_OF_VARIABLE,flag1,flag2,setting1=value,setting2=value"`
+//	}
+//
+// Available flags:
+//
+//   - optional: Dont require this value to exist in the environment.
+//   - unset: Remove this environment value after load.
+//
+// Available settings:
+//
+//   - default=value: Set the default (string) value if it is not found in the environment.
+//   - validator=validator: Set the name of the validator to use for this field.
+//
+// # Validators
+//
+// Fields can have their string values validated during environment load.
+//
+// Available validators:
+//
+//   - file: Verify that the path exists and is a file.
+//   - dir: Verify that the path exists and is a directory.
+//   - uri: Verify that the value is a URI.
+//   - ip: Verify that the value is an IP address.
+//   - port: Verify that the value is a port.
+//   - hostport: Verify that the value is a host/port combination.
+//   - cidr: Verify that the value is a CIDR.
+//
+// # Custom Validators
+//
+// Fields can be implement custom validators by specifying a [Validator] in [Config].
+//
+// See the examples below.
+//
+// # Custom Types
+//
+// Custom types can be supported by specifying a [Parser] in [Config].
+//
+// See the examples below.
+//
+// # Examples
 package confik
 
 import (
@@ -6,6 +76,7 @@ import (
 	"reflect"
 )
 
+// LoadFromEnv will build a T by reading values from environment files and variables.
 func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 	cfg := DefaultConfig[T]()
 	if len(cfgs) > 0 {
@@ -14,7 +85,7 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 
 	// attempt to find and load the ".env" file
 	if cfg.UseEnvFile {
-		_, err := LoadEnvFile(cfg)
+		_, err := loadEnvFile(cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -25,7 +96,7 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 
 	// iterate over all the visible fields on the struct
 	for _, field := range reflect.VisibleFields(t) {
-		fieldConfig, err := NewFieldConfig(cfg, field)
+		fieldConfig, err := newFieldConfig(cfg, field)
 		if err != nil {
 			return nil, err
 		}
@@ -68,6 +139,7 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 			}
 		}
 
+		// handle simple types and slices
 		var kind = rv.Kind()
 		if kind == reflect.Slice {
 			err := handleSlice(fieldConfig, fieldValue, rv)
@@ -76,7 +148,6 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 			}
 			continue
 		}
-
 		kindParser, exists := kindParsers[kind]
 		if exists {
 			// convert the value from a string to the fields type
@@ -86,6 +157,7 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 			continue
 		}
 
+		// handle more complex types (like time.Time, time.Duration, custom types)
 		parsers := mergeMap(typeParsers, cfg.Parsers)
 		parser, exists := parsers[field.Type]
 		if exists {

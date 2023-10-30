@@ -1,7 +1,6 @@
 package confik
 
 import (
-	"bufio"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseEnvironmentVariableExpression(t *testing.T) {
-	name, value, err := parseEnvironmentVariableExpression("VARIABLE=")
+func TestParseEnvVar(t *testing.T) {
+	name, value, err := parseEnvVar("VARIABLE=")
 	assert.Nil(t, err)
 	assert.Equal(t, "VARIABLE", name)
 	assert.Equal(t, "", value)
@@ -23,7 +22,7 @@ func TestFindEnvFile(t *testing.T) {
 		os.Chdir(cwd)
 	}()
 	os.Chdir("testdata/folder1/folder2/folder3")
-	path, err := FindEnvFile()
+	path, err := findEnvFile()
 	assert.Nil(t, err)
 	absPath := filepath.Join(cwd, "testdata/folder1/.env")
 	assert.Equal(t, absPath, path)
@@ -35,7 +34,7 @@ func TestFindEnvFileNotFound(t *testing.T) {
 		os.Chdir(cwd)
 	}()
 	os.Chdir("/")
-	path, err := FindEnvFile()
+	path, err := findEnvFile()
 	assert.Nil(t, err)
 	assert.Equal(t, "", path)
 }
@@ -47,13 +46,13 @@ func TestLoadEnvFileNoEnvFile(t *testing.T) {
 		os.Chdir(cwd)
 	}()
 
-	kv, err := LoadEnvFile(Config[testAllTypes]{})
+	kv, err := loadEnvFile(Config[testAllTypes]{})
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]string{}, kv)
 }
 
 func TestLoadEnvFileDoesNotExist(t *testing.T) {
-	_, err := LoadEnvFile(Config[testAllTypes]{
+	_, err := loadEnvFile(Config[testAllTypes]{
 		EnvFilePath: ".fake",
 	})
 	if assert.Error(t, err) {
@@ -62,7 +61,7 @@ func TestLoadEnvFileDoesNotExist(t *testing.T) {
 }
 
 func TestLoadEnvFileInvalid(t *testing.T) {
-	_, err := LoadEnvFile(Config[testAllTypes]{
+	_, err := loadEnvFile(Config[testAllTypes]{
 		EnvFilePath: "testdata/.invalid",
 	})
 	if assert.Error(t, err) {
@@ -81,8 +80,7 @@ TC_LONG_NAME_1=test
 
 
 `
-	scanner := bufio.NewScanner(strings.NewReader(input))
-	kv, err := ParseEnvFile(scanner)
+	kv, err := parseEnvFile(strings.NewReader(input))
 	assert.Nil(t, err)
 	expected := map[string]string{
 		"TC_UNQUOTED":    "1",
@@ -100,8 +98,7 @@ TC_LONG_NAME_1=test
 
 func TestParseEnvFileInvalid(t *testing.T) {
 	input := "BLAH"
-	scanner := bufio.NewScanner(strings.NewReader(input))
-	_, err := ParseEnvFile(scanner)
+	_, err := parseEnvFile(strings.NewReader(input))
 	if assert.Error(t, err) {
 		assert.Equal(t, "invalid expression in env file: BLAH", err.Error())
 	}
@@ -118,9 +115,9 @@ TC_LONG_NAME_1=test
 
 
 `
-	scanner := bufio.NewScanner(strings.NewReader(input))
+	reader := strings.NewReader(input)
 	for n := 0; n < b.N; n++ {
-		_, err := ParseEnvFile(scanner)
+		_, err := parseEnvFile(reader)
 		if err != nil {
 			panic(err)
 		}
