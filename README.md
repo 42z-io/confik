@@ -21,8 +21,6 @@ type ExampleConfig struct {
     Height float32
 }
 
-var MyEnvConfig MyEnv
-
 func init() {
     os.Setenv("NAME", "Bob")
     os.Setenv("AGE", "20")
