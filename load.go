@@ -35,6 +35,13 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 
 		// get the environment variable
 		fieldValue, exists := os.LookupEnv(fieldConfig.Name)
+
+		// unset the environment variable if applicable
+		if fieldConfig.Unset {
+			os.Unsetenv(fieldConfig.Name)
+		}
+
+		// handle default values if applicable
 		if !exists && cfg.DefaultValue != nil {
 			var drv = reflect.ValueOf(cfg.DefaultValue).Elem().FieldByName(field.Name)
 			rv.Set(drv)

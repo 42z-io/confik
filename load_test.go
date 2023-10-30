@@ -109,6 +109,22 @@ func TestLoadFromEnvKindError(t *testing.T) {
 	}
 }
 
+type testUnset struct {
+	Secret string `env:"SECRET,unset"`
+}
+
+func TestLoadFromEnvUnset(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("SECRET", "MY_SECRET")
+	cfg, err := LoadFromEnv(Config[testUnset]{
+		UseEnvFile: false,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "MY_SECRET", cfg.Secret)
+	_, exists := os.LookupEnv("SECRET")
+	assert.False(t, exists)
+}
+
 type testParseUnknown struct {
 	Website MyCustomType
 }
