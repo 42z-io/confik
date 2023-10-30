@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func convertError(envName string, value string, kind reflect.Kind, err error) error {
@@ -161,14 +162,24 @@ func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 func parseUrl(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	u, err := url.ParseRequestURI(fieldValue)
 	if err != nil {
-		return fmt.Errorf("%s=%s invalid URL: %w", fc.Name, fieldValue, err)
+		return fmt.Errorf("%s=%s invalid url.URL: %w", fc.Name, fieldValue, err)
 	}
 	rv.Set(reflect.ValueOf(*u))
 	return nil
 }
 
+func parseTime(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+	t, err := time.Parse(time.RFC3339, fieldValue)
+	if err != nil {
+		return fmt.Errorf("%s=%s invalid time.Time: %w", fc.Name, fieldValue, err)
+	}
+	rv.Set(reflect.ValueOf(t))
+	return nil
+}
+
 var typeParsers = map[reflect.Type]Parser{
-	reflect.TypeOf(url.URL{}): parseUrl,
+	reflect.TypeOf(url.URL{}):   parseUrl,
+	reflect.TypeOf(time.Time{}): parseTime,
 }
 
 var kindParsers = map[reflect.Kind]Parser{

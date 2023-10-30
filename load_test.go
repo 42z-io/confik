@@ -90,7 +90,7 @@ func TestLoadFromEnvParserError(t *testing.T) {
 		UseEnvFile: false,
 	})
 	if assert.Error(t, err) {
-		assert.Equal(t, "WEBSITE=aaa invalid URL: parse \"aaa\": invalid URI for request", err.Error())
+		assert.Equal(t, "WEBSITE=aaa invalid url.URL: parse \"aaa\": invalid URI for request", err.Error())
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -319,9 +320,25 @@ func TestUrl(t *testing.T) {
 	}
 	err := parseUrl(fc, "test.html", rv)
 	if assert.Error(t, err) {
-		assert.Equal(t, "test=test.html invalid URL: parse \"test.html\": invalid URI for request", err.Error())
+		assert.Equal(t, "test=test.html invalid url.URL: parse \"test.html\": invalid URI for request", err.Error())
 	}
 	err = parseUrl(fc, "https://google.com", rv)
 	assert.Nil(t, err)
 	assert.Equal(t, "https://google.com", res.String())
+}
+
+func TestTime(t *testing.T) {
+	var res time.Time
+	rv := reflect.ValueOf(&res).Elem()
+	fc := &FieldConfig{
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
+	}
+	err := parseTime(fc, "1988", rv)
+	if assert.Error(t, err) {
+		assert.Equal(t, "test=1988 invalid time.Time: parsing time \"1988\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"\" as \"-\"", err.Error())
+	}
+	err = parseTime(fc, "1988-10-19T10:42:42Z", rv)
+	assert.Nil(t, err)
+	assert.Equal(t, "1988-10-19 10:42:42 +0000 UTC", res.String())
 }
