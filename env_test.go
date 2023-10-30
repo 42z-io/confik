@@ -106,3 +106,23 @@ func TestParseEnvFileInvalid(t *testing.T) {
 		assert.Equal(t, "invalid expression in env file: BLAH", err.Error())
 	}
 }
+
+func BenchmarkParseEnvFile(b *testing.B) {
+	input := `
+// Comment
+TC_UNQUOTED=1
+TC_QUOTED="hello world"
+TC_SPACES=hello world
+TC_LONG_NAME_1=test
+# Comment
+
+
+`
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	for n := 0; n < b.N; n++ {
+		_, err := ParseEnvFile(scanner)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
