@@ -39,7 +39,7 @@ func parseSetting(expressionStr string) (string, string, error) {
 
 func parseTag(tagStr string) (*Tag, error) {
 	if len(tagStr) == 0 {
-		return nil, fmt.Errorf("empty tag")
+		return nil, fmt.Errorf("invalid tag: empty tag")
 	}
 	parts := strings.Split(tagStr, ",")
 	var tag Tag
@@ -84,12 +84,13 @@ func parseEnvTag(tagStr string) (*ConfigTag, error) {
 	}
 
 	for settingName, settingValue := range tag.Settings {
-		var settingValueC = strings.Clone(settingValue)
+		// TODO remove in Go 1.22
+		settingValue := settingValue
 		switch settingName {
 		case "validate":
-			configTag.Validator = &settingValueC
+			configTag.Validator = &settingValue
 		case "default":
-			configTag.Default = &settingValueC
+			configTag.Default = &settingValue
 		default:
 			return nil, fmt.Errorf("invalid env tag: unknown setting %s", settingName)
 		}
