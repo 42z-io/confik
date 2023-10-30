@@ -9,20 +9,20 @@ import (
 )
 
 type FieldConfig struct {
-	Optional  bool
-	Name      string
-	Validator FieldValidator
+	Optional bool
+	Name     string
+	Validate Validator
 }
 
-func NewFieldConfig[T any](cfg Config[T], name string, tag string) (*FieldConfig, error) {
-	envName, err := fieldNameToEnvironmentVariable(name)
+func NewFieldConfig[T any](cfg Config[T], fieldName string, tag string) (*FieldConfig, error) {
+	envName, err := toEnvName(fieldName)
 	if err != nil {
 		return nil, err
 	}
 	fieldCfg := FieldConfig{
-		Name:      envName,
-		Optional:  false,
-		Validator: nil,
+		Name:     envName,
+		Optional: false,
+		Validate: nil,
 	}
 	tags, err := structtag.Parse(tag)
 	if err != nil {
@@ -33,8 +33,8 @@ func NewFieldConfig[T any](cfg Config[T], name string, tag string) (*FieldConfig
 		return &fieldCfg, nil
 	}
 
-	if err := validateEnvironmentVariable(envTags.Name); err != nil {
-		return nil, fmt.Errorf("invalid struct tag on %s: %w", name, err)
+	if err := verifyEnvName(envTags.Name); err != nil {
+		return nil, fmt.Errorf("invalid struct tag on %s: %w", fieldName, err)
 	}
 
 	fieldCfg.Name = envTags.Name
@@ -42,22 +42,22 @@ func NewFieldConfig[T any](cfg Config[T], name string, tag string) (*FieldConfig
 	if envTags.HasOption("optional") {
 		fieldCfg.Optional = true
 	}
-	for k, v := range fieldValidators {
-		if envTags.HasOption(k) {
-			fieldCfg.Validator = v
+
+	// TODO fix
+	for validatorName, validator := range fieldValidators {
+		if envTags.HasOption(validatorName) {
+			fieldCfg.Validate = validator
 		}
 	}
-	if cfg.CustomValidators != nil {
-		for k, v := range cfg.CustomValidators {
-			if envTags.HasOption(k) {
-				fieldCfg.Validator = v
-			}
+	for validatorName, validator := range cfg.Validators {
+		if envTags.HasOption(validatorName) {
+			fieldCfg.Validate = validator
 		}
 	}
 	return &fieldCfg, nil
 }
 
-func validateEnvironmentVariable(name string) error {
+func verifyEnvName(name string) error {
 	if len(name) == 0 {
 		return fmt.Errorf("invalid environment variable name: %s must be [A-Z0-9_]+", name)
 	}
@@ -69,7 +69,7 @@ func validateEnvironmentVariable(name string) error {
 	return nil
 }
 
-func fieldNameToEnvironmentVariable(name string) (string, error) {
+func toEnvName(name string) (string, error) {
 	// split at capitalization, case change, or numbers
 	var sb strings.Builder
 	for i, c := range name {

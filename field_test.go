@@ -16,7 +16,7 @@ func TestFieldNameToEnvironmentVariable(t *testing.T) {
 		"other_name":     "OTHER_NAME",
 	}
 	for input, expect := range res {
-		result, err := fieldNameToEnvironmentVariable(input)
+		result, err := toEnvName(input)
 		assert.Nil(t, err, "expected field name %s to be valid", input)
 		assert.Equal(t, expect, result)
 	}
@@ -41,12 +41,12 @@ func TestValidateEnvironmentVariable(t *testing.T) {
 	}
 
 	for _, v := range valid {
-		err := validateEnvironmentVariable(v)
+		err := verifyEnvName(v)
 		assert.Nil(t, err, "expected variable %s to be valid", v)
 	}
 
 	for _, i := range invalid {
-		err := validateEnvironmentVariable(i)
+		err := verifyEnvName(i)
 		if assert.Error(t, err) {
 			assert.Equal(t, fmt.Sprintf("invalid environment variable name: %s must be [A-Z0-9_]+", i), err.Error(), "expected variable %s to be invalid", i)
 		}

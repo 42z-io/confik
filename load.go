@@ -52,8 +52,8 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 		}
 
 		// run validation on the environment variable (if any)
-		if fieldCfg.Validator != nil {
-			if err = fieldCfg.Validator(fieldCfg.Name, fieldValue); err != nil {
+		if fieldCfg.Validate != nil {
+			if err = fieldCfg.Validate(fieldCfg.Name, fieldValue); err != nil {
 				return nil, err
 			}
 		}
@@ -66,13 +66,16 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 		} else {
 			// check and see if there is a converter for kind of value this field has
 			converter, converterExists := kindConverters[kind]
-			customConverter, customConverterExists := cfg.CustomConverters[rv.Type()]
-			if customConverter != nil {
+			typeConverter, typeConverterExists := typeConverters[field.Type]
+			customConverter, customConverterExists := cfg.Parsers[field.Type]
+			if typeConverter != nil {
+				converter = typeConverter
+			} else if customConverter != nil {
 				converter = customConverter
 			}
 
 			// if there is no standard converter, and no user provided convert return an error
-			if !converterExists && !customConverterExists {
+			if !converterExists && !customConverterExists && !typeConverterExists {
 				return nil, fmt.Errorf("field %s of type %s is not supported", field.Name, field.Type)
 			}
 

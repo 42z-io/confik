@@ -2,6 +2,7 @@ package confik
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -11,9 +12,9 @@ func convertError(envName string, value string, kind reflect.Kind, err error) er
 	return fmt.Errorf("%s=%s is not a valid %s: %w", envName, value, kind, err)
 }
 
-type TypeConverter = func(fc *FieldConfig, fieldValue string, rv reflect.Value) error
+type Parser = func(fc *FieldConfig, fieldValue string, rv reflect.Value) error
 
-func handleUint(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseUint(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, strconv.IntSize)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Uint, err)
@@ -22,7 +23,7 @@ func handleUint(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleUint8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseUint8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, 8)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Uint8, err)
@@ -31,7 +32,7 @@ func handleUint8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleUint16(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseUint16(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, 16)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Uint16, err)
@@ -39,7 +40,7 @@ func handleUint16(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	rv.SetUint(i)
 	return nil
 }
-func handleUint32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseUint32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, 32)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Uint32, err)
@@ -47,7 +48,7 @@ func handleUint32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	rv.SetUint(i)
 	return nil
 }
-func handleUint64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseUint64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseUint(fieldValue, 10, 64)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Uint64, err)
@@ -56,7 +57,7 @@ func handleUint64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleInt(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseInt(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseInt(fieldValue, 10, strconv.IntSize)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Int, err)
@@ -65,7 +66,7 @@ func handleInt(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleInt8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseInt8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseInt(fieldValue, 10, 8)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Int8, err)
@@ -74,7 +75,7 @@ func handleInt8(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleInt16(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseInt16(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseInt(fieldValue, 10, 16)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Int16, err)
@@ -83,7 +84,7 @@ func handleInt16(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleInt32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseInt32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseInt(fieldValue, 10, 32)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Int32, err)
@@ -92,7 +93,7 @@ func handleInt32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleInt64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseInt64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseInt(fieldValue, 10, 64)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Int64, err)
@@ -101,7 +102,7 @@ func handleInt64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleFloat32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseFloat32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseFloat(fieldValue, 32)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Float32, err)
@@ -110,7 +111,7 @@ func handleFloat32(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleFloat64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseFloat64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	i, err := strconv.ParseFloat(fieldValue, 64)
 	if err != nil {
 		return convertError(fc.Name, fieldValue, reflect.Float64, err)
@@ -119,7 +120,7 @@ func handleFloat64(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleBool(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseBool(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	lower := strings.ToLower(fieldValue)
 	if lower == "0" || lower == "false" || lower == "no" {
 		rv.SetBool(false)
@@ -131,7 +132,7 @@ func handleBool(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-func handleString(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+func parseString(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	rv.SetString(fieldValue)
 	return nil
 }
@@ -156,19 +157,32 @@ func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-var kindConverters = map[reflect.Kind]TypeConverter{
-	reflect.Uint:    handleUint,
-	reflect.Uint8:   handleUint8,
-	reflect.Uint16:  handleUint16,
-	reflect.Uint32:  handleUint32,
-	reflect.Uint64:  handleUint64,
-	reflect.Int:     handleInt,
-	reflect.Int8:    handleInt8,
-	reflect.Int16:   handleInt16,
-	reflect.Int32:   handleInt32,
-	reflect.Int64:   handleInt64,
-	reflect.Float32: handleFloat32,
-	reflect.Float64: handleFloat64,
-	reflect.Bool:    handleBool,
-	reflect.String:  handleString,
+func parseUrl(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+	u, err := url.Parse(fieldValue)
+	if err != nil {
+		return fmt.Errorf("%s=%s invalid URL: %w", fc.Name, fieldValue, err)
+	}
+	rv.Set(reflect.ValueOf(*u))
+	return nil
+}
+
+var typeConverters = map[reflect.Type]Parser{
+	reflect.TypeOf(url.URL{}): parseUrl,
+}
+
+var kindConverters = map[reflect.Kind]Parser{
+	reflect.Uint:    parseUint,
+	reflect.Uint8:   parseUint8,
+	reflect.Uint16:  parseUint16,
+	reflect.Uint32:  parseUint32,
+	reflect.Uint64:  parseUint64,
+	reflect.Int:     parseInt,
+	reflect.Int8:    parseInt8,
+	reflect.Int16:   parseInt16,
+	reflect.Int32:   parseInt32,
+	reflect.Int64:   parseInt64,
+	reflect.Float32: parseFloat32,
+	reflect.Float64: parseFloat64,
+	reflect.Bool:    parseBool,
+	reflect.String:  parseString,
 }

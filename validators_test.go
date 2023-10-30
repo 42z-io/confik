@@ -21,7 +21,7 @@ func TestLoadFromEnvCustomValidator(t *testing.T) {
 	os.Setenv("MY_FIELD", "test")
 	_, err := LoadFromEnv(Config[CustomValidatorType]{
 		UseEnvFile: false,
-		CustomValidators: map[string]FieldValidator{
+		Validators: map[string]Validator{
 			"custom": customValidator,
 		},
 	})

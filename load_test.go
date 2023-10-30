@@ -2,6 +2,7 @@ package confik
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -47,8 +48,9 @@ func TestLoadFromEnv(t *testing.T) {
 }
 
 type testCustomValidator struct {
-	Website  string `env:"WEBSITE,uri"`
-	Optional bool   `env:"OPTIONAL,optional"`
+	Website  string  `env:"WEBSITE,uri"`
+	Url      url.URL `env:"WEBSITE"`
+	Optional bool    `env:"OPTIONAL,optional"` // nodefault, default=THIS,
 }
 
 func TestLoadFromEnvWithValidator(t *testing.T) {
@@ -59,6 +61,7 @@ func TestLoadFromEnvWithValidator(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, "https://google.com/my_site", cfg.Website)
+	assert.Equal(t, "google.com", cfg.Url.Host)
 	assert.Equal(t, false, cfg.Optional)
 }
 

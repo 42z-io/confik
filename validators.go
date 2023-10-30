@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-type FieldValidator = func(envName, value string) error
+type Validator = func(envName, value string) error
 
 func validateUri(envName string, value string) error {
 	if _, err := url.ParseRequestURI(value); err != nil {
@@ -74,7 +74,7 @@ func validateDir(envName string, value string) error {
 	return nil
 }
 
-var fieldValidators = map[string]FieldValidator{
+var fieldValidators = map[string]Validator{
 	"uri":      validateUri,
 	"ip":       validateIp,
 	"port":     validatePort,
