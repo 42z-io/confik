@@ -13,7 +13,7 @@ func customValidator(envName string, value string) error {
 }
 
 type CustomValidatorType struct {
-	MyField string `env:"MY_FIELD,custom"`
+	MyField string `env:"MY_FIELD,validate=custom"`
 }
 
 func TestLoadFromEnvCustomValidator(t *testing.T) {

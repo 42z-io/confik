@@ -16,8 +16,7 @@ func TestFieldNameToEnvironmentVariable(t *testing.T) {
 		"other_name":     "OTHER_NAME",
 	}
 	for input, expect := range res {
-		result, err := toEnvName(input)
-		assert.Nil(t, err, "expected field name %s to be valid", input)
+		result := toEnvName(input)
 		assert.Equal(t, expect, result)
 	}
 }

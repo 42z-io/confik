@@ -25,25 +25,28 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 
 	// iterate over all the visible fields on the struct
 	for _, field := range reflect.VisibleFields(t) {
-		fieldCfg, err := NewFieldConfig(cfg, field.Name, string(field.Tag))
+		fieldConfig, err := NewFieldConfig(cfg, field)
 		if err != nil {
 			return nil, err
 		}
-		// get the environment variable
-		fieldValue, exists := os.LookupEnv(fieldCfg.Name)
 
 		// get a reflected value of the field
 		var rv = reflect.ValueOf(&z).Elem().FieldByName(field.Name)
-		var kind = rv.Kind()
+
+		// get the environment variable
+		fieldValue, exists := os.LookupEnv(fieldConfig.Name)
+		if !exists && cfg.DefaultValue != nil {
+			var drv = reflect.ValueOf(cfg.DefaultValue).Elem().FieldByName(field.Name)
+			rv.Set(drv)
+			continue
+		} else if !exists && fieldConfig.Default != nil {
+			fieldValue = *fieldConfig.Default
+			exists = true
+		}
 
 		// return an error if the environment variable doesn't exist and this field is not optional
-		if !fieldCfg.Optional && !exists {
-			if cfg.DefaultValue != nil {
-				var drv = reflect.ValueOf(cfg.DefaultValue).Elem().FieldByName(field.Name)
-				rv.Set(drv)
-				continue
-			}
-			return nil, fmt.Errorf("environment variable %s does not exist", fieldCfg.Name)
+		if !fieldConfig.Optional && !exists {
+			return nil, fmt.Errorf("environment variable %s does not exist and has no default", fieldConfig.Name)
 		}
 
 		// skip to the next field if we cant find the environment variable
@@ -52,14 +55,15 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 		}
 
 		// run validation on the environment variable (if any)
-		if fieldCfg.Validate != nil {
-			if err = fieldCfg.Validate(fieldCfg.Name, fieldValue); err != nil {
+		if fieldConfig.Validate != nil {
+			if err = (*fieldConfig.Validate)(fieldConfig.Name, fieldValue); err != nil {
 				return nil, err
 			}
 		}
 
+		var kind = rv.Kind()
 		if kind == reflect.Slice {
-			err := handleSlice(fieldCfg, fieldValue, rv)
+			err := handleSlice(fieldConfig, fieldValue, rv)
 			if err != nil {
 				return nil, err
 			}
@@ -80,7 +84,7 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 			}
 
 			// convert the value from a string to the fields type
-			if err = converter(fieldCfg, fieldValue, rv); err != nil {
+			if err = converter(fieldConfig, fieldValue, rv); err != nil {
 				return nil, err
 			}
 		}

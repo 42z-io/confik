@@ -41,7 +41,8 @@ func TestUint8(t *testing.T) {
 	var res uint8
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseUint8(fc, "-100", rv)
 	if assert.Error(t, err) {
@@ -56,7 +57,8 @@ func TestUint16(t *testing.T) {
 	var res uint16
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseUint16(fc, "-100", rv)
 	if assert.Error(t, err) {
@@ -71,7 +73,8 @@ func TestUint32(t *testing.T) {
 	var res uint32
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseUint32(fc, "-100", rv)
 	if assert.Error(t, err) {
@@ -86,7 +89,8 @@ func TestUint64(t *testing.T) {
 	var res uint64
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseUint64(fc, "-100", rv)
 	if assert.Error(t, err) {
@@ -101,7 +105,8 @@ func TestInt8(t *testing.T) {
 	var res int8
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseInt8(fc, "-255", rv)
 	if assert.Error(t, err) {
@@ -116,7 +121,8 @@ func TestInt16(t *testing.T) {
 	var res int16
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseInt16(fc, "-32769", rv)
 	if assert.Error(t, err) {
@@ -131,7 +137,8 @@ func TestInt32(t *testing.T) {
 	var res int32
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseInt32(fc, "2147483648", rv)
 	if assert.Error(t, err) {
@@ -146,7 +153,8 @@ func TestInt64(t *testing.T) {
 	var res int64
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseInt64(fc, "18446744073709551615", rv)
 	if assert.Error(t, err) {
@@ -161,7 +169,8 @@ func TestFloat32(t *testing.T) {
 	var res float32
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseFloat32(fc, "abc", rv)
 	if assert.Error(t, err) {
@@ -176,7 +185,8 @@ func TestFloat64(t *testing.T) {
 	var res float64
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseFloat64(fc, "1.7e+309", rv)
 	if assert.Error(t, err) {
@@ -191,7 +201,8 @@ func TestBool(t *testing.T) {
 	var res bool
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseBool(fc, "g", rv)
 	if assert.Error(t, err) {
@@ -221,7 +232,8 @@ func TestString(t *testing.T) {
 	var res string
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := parseString(fc, "string", rv)
 	assert.Nil(t, err)
@@ -232,7 +244,8 @@ func TestStringSlice(t *testing.T) {
 	var res []string
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := handleSlice(fc, "string1,string2", rv)
 	assert.Nil(t, err)
@@ -243,7 +256,8 @@ func TestIntSlice(t *testing.T) {
 	var res []int
 	rv := reflect.ValueOf(&res).Elem()
 	fc := &FieldConfig{
-		Name: "test",
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
 	}
 	err := handleSlice(fc, "1,2", rv)
 	assert.Nil(t, err)

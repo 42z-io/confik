@@ -48,9 +48,9 @@ func TestLoadFromEnv(t *testing.T) {
 }
 
 type testCustomValidator struct {
-	Website  string  `env:"WEBSITE,uri"`
+	Website  string  `env:"WEBSITE,validate=uri"`
 	Url      url.URL `env:"WEBSITE"`
-	Optional bool    `env:"OPTIONAL,optional"` // nodefault, default=THIS,
+	Optional bool    `env:"OPTIONAL,optional"`
 }
 
 func TestLoadFromEnvWithValidator(t *testing.T) {
@@ -75,7 +75,7 @@ func TestLoadFromEnvInvalidTags(t *testing.T) {
 		UseEnvFile:  true,
 	})
 	if assert.Error(t, err) {
-		assert.Equal(t, "invalid struct tag on Invalid: invalid environment variable name: @@ must be [A-Z0-9_]+", err.Error())
+		assert.Equal(t, "invalid tag on field Invalid: invalid env tag: invalid environment variable name: @@ must be [A-Z0-9_]+", err.Error())
 	}
 }
 
@@ -94,7 +94,7 @@ func TestLoadFromEnvUnsupportedSlice(t *testing.T) {
 	}
 }
 
-func TestLoadFromEnvWithDefault(t *testing.T) {
+func TestLoadFromEnvWithDefaultValue(t *testing.T) {
 	os.Clearenv()
 	cfg, err := LoadFromEnv(Config[testUnsupportedSlice]{
 		UseEnvFile: false,
@@ -105,6 +105,20 @@ func TestLoadFromEnvWithDefault(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "hello", cfg.Custom[0].Value)
 }
+
+type testDefaultValue struct {
+	Website string `env:"WEBSITE,default=https://google.com,validate=uri"`
+}
+
+func TestLoadFromEnvWithDefaultTag(t *testing.T) {
+	os.Clearenv()
+	cfg, err := LoadFromEnv(Config[testDefaultValue]{
+		UseEnvFile: false,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "https://google.com", cfg.Website)
+}
+
 func TestLoadFromEnvEnvFileOverride(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("INT16", "42")
@@ -123,7 +137,7 @@ func TestLoadFromEnvRequiredFields(t *testing.T) {
 		EnvFileOverride: false,
 	})
 	if assert.Error(t, err) {
-		assert.Equal(t, "environment variable A_STRING_LIST does not exist", err.Error())
+		assert.Equal(t, "environment variable A_STRING_LIST does not exist and has no default", err.Error())
 	}
 }
 

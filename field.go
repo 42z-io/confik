@@ -2,59 +2,53 @@ package confik
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"unicode"
-
-	"github.com/fatih/structtag"
 )
 
 type FieldConfig struct {
-	Optional bool
-	Name     string
-	Validate Validator
+	ConfigTag
+	Validate *Validator
 }
 
-func NewFieldConfig[T any](cfg Config[T], fieldName string, tag string) (*FieldConfig, error) {
-	envName, err := toEnvName(fieldName)
-	if err != nil {
-		return nil, err
+func mergeMap(a map[string]Validator, b map[string]Validator) map[string]Validator {
+	merged := make(map[string]Validator)
+	for k, v := range a {
+		merged[k] = v
 	}
-	fieldCfg := FieldConfig{
-		Name:     envName,
-		Optional: false,
-		Validate: nil,
+	for k, v := range b {
+		merged[k] = v
 	}
-	tags, err := structtag.Parse(tag)
-	if err != nil {
-		return nil, err
-	}
-	envTags, err := tags.Get("env")
-	if err != nil {
-		return &fieldCfg, nil
-	}
+	return merged
+}
 
-	if err := verifyEnvName(envTags.Name); err != nil {
-		return nil, fmt.Errorf("invalid struct tag on %s: %w", fieldName, err)
-	}
-
-	fieldCfg.Name = envTags.Name
-
-	if envTags.HasOption("optional") {
-		fieldCfg.Optional = true
-	}
-
-	// TODO fix
-	for validatorName, validator := range fieldValidators {
-		if envTags.HasOption(validatorName) {
-			fieldCfg.Validate = validator
+func NewFieldConfig[T any](cfg Config[T], rv reflect.StructField) (*FieldConfig, error) {
+	var fieldConfig FieldConfig
+	tagStr := rv.Tag.Get("env")
+	if tagStr != "" {
+		tag, err := parseEnvTag(tagStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid tag on field %s: %w", rv.Name, err)
+		}
+		fieldConfig.ConfigTag = *tag
+	} else {
+		fieldConfig.ConfigTag = ConfigTag{
+			Name: toEnvName(rv.Name),
 		}
 	}
-	for validatorName, validator := range cfg.Validators {
-		if envTags.HasOption(validatorName) {
-			fieldCfg.Validate = validator
+
+	validators := mergeMap(fieldValidators, cfg.Validators)
+
+	validatorName := fieldConfig.ConfigTag.Validator
+	if validatorName != nil {
+		validator, exists := validators[*validatorName]
+		if !exists {
+			return &fieldConfig, nil
 		}
+		fieldConfig.Validate = &validator
 	}
-	return &fieldCfg, nil
+	return &fieldConfig, nil
 }
 
 func verifyEnvName(name string) error {
@@ -69,17 +63,15 @@ func verifyEnvName(name string) error {
 	return nil
 }
 
-func toEnvName(name string) (string, error) {
+func toEnvName(name string) string {
 	// split at capitalization, case change, or numbers
 	var sb strings.Builder
 	for i, c := range name {
 		if i != 0 && (unicode.IsUpper(c) || unicode.IsDigit(c)) {
-			if _, err := sb.WriteString("_"); err != nil {
-				return "", err
-			}
+			sb.WriteString("_")
 		}
 		sb.WriteRune(unicode.ToUpper(c))
 	}
 	var res = sb.String()
-	return res, nil
+	return res
 }
