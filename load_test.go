@@ -237,3 +237,84 @@ func TestLoadFromEnvFoundEnvIsDir(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("environment file is a directory: %s", filepath.Join(cwd, target, ".env")), err.Error())
 	}
 }
+
+type benchSimple struct {
+	A string
+}
+
+func BenchmarkLoadFromEnvSimple(b *testing.B) {
+	os.Clearenv()
+	os.Setenv("A", "a")
+	cfg := Config[benchSimple]{
+		UseEnvFile: false,
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := LoadFromEnv(cfg)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+type benchDefault struct {
+	A string `env:"A,default=hi"`
+}
+
+func BenchmarkLoadFromEnvDefault(b *testing.B) {
+	os.Clearenv()
+	os.Setenv("A", "a")
+	cfg := Config[benchDefault]{
+		UseEnvFile: false,
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := LoadFromEnv(cfg)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+type benchOptional struct {
+	A string `env:"A,optional"`
+}
+
+func BenchmarkLoadFromEnvOptional(b *testing.B) {
+	os.Clearenv()
+	cfg := Config[benchOptional]{
+		UseEnvFile: false,
+		Validators: map[string]Validator{
+			"custom": func(envName, value string) error {
+				return nil
+			},
+		},
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := LoadFromEnv(cfg)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+type benchValidate struct {
+	A string `env:"A,validate=custom"`
+}
+
+func BenchmarkLoadFromEnvValidate(b *testing.B) {
+	os.Clearenv()
+	os.Setenv("A", "a")
+	cfg := Config[benchValidate]{
+		UseEnvFile: false,
+		Validators: map[string]Validator{
+			"custom": func(envName, value string) error {
+				return nil
+			},
+		},
+	}
+	for n := 0; n < b.N; n++ {
+		_, err := LoadFromEnv(cfg)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
