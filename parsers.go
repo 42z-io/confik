@@ -177,9 +177,19 @@ func parseTime(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
+func parseDuration(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
+	t, err := time.ParseDuration(fieldValue)
+	if err != nil {
+		return fmt.Errorf("%s=%s invalid time.Duration: %w", fc.Name, fieldValue, err)
+	}
+	rv.Set(reflect.ValueOf(t))
+	return nil
+}
+
 var typeParsers = map[reflect.Type]Parser{
-	reflect.TypeOf(url.URL{}):   parseUrl,
-	reflect.TypeOf(time.Time{}): parseTime,
+	reflect.TypeOf(url.URL{}):          parseUrl,
+	reflect.TypeOf(time.Time{}):        parseTime,
+	reflect.TypeOf([0]time.Duration{}): parseDuration,
 }
 
 var kindParsers = map[reflect.Kind]Parser{

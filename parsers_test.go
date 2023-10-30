@@ -342,3 +342,19 @@ func TestTime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "1988-10-19 10:42:42 +0000 UTC", res.String())
 }
+
+func TestDuration(t *testing.T) {
+	var res time.Duration
+	rv := reflect.ValueOf(&res).Elem()
+	fc := &FieldConfig{
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
+	}
+	err := parseDuration(fc, "test", rv)
+	if assert.Error(t, err) {
+		assert.Equal(t, "test=test invalid time.Duration: time: invalid duration \"test\"", err.Error())
+	}
+	err = parseDuration(fc, "2h", rv)
+	assert.Nil(t, err)
+	assert.Equal(t, float64(7200), res.Seconds())
+}
