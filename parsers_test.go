@@ -37,6 +37,22 @@ func TestLoadFromEnvCustomConverter(t *testing.T) {
 	assert.Equal(t, custom.MyField.Value, "hello")
 }
 
+func TestUint(t *testing.T) {
+	var res uint
+	rv := reflect.ValueOf(&res).Elem()
+	fc := &FieldConfig{
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
+	}
+	err := parseUint(fc, "-100", rv)
+	if assert.Error(t, err) {
+		assert.Equal(t, "test=-100 is not a valid uint: strconv.ParseUint: parsing \"-100\": invalid syntax", err.Error())
+	}
+	err = parseUint(fc, "100", rv)
+	assert.Nil(t, err)
+	assert.Equal(t, res, uint(100))
+}
+
 func TestUint8(t *testing.T) {
 	var res uint8
 	rv := reflect.ValueOf(&res).Elem()
@@ -99,6 +115,22 @@ func TestUint64(t *testing.T) {
 	err = parseUint64(fc, "18446744073709551615", rv)
 	assert.Nil(t, err)
 	assert.Equal(t, res, uint64(18446744073709551615))
+}
+
+func TestInt(t *testing.T) {
+	var res int
+	rv := reflect.ValueOf(&res).Elem()
+	fc := &FieldConfig{
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
+	}
+	err := parseInt(fc, "aaa", rv)
+	if assert.Error(t, err) {
+		assert.Equal(t, "test=aaa is not a valid int: strconv.ParseInt: parsing \"aaa\": invalid syntax", err.Error())
+	}
+	err = parseInt8(fc, "100", rv)
+	assert.Nil(t, err)
+	assert.Equal(t, res, int(100))
 }
 
 func TestInt8(t *testing.T) {
