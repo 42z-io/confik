@@ -67,27 +67,29 @@ func LoadFromEnv[T any](cfgs ...Config[T]) (*T, error) {
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			// check and see if there is a converter for kind of value this field has
-			converter, converterExists := kindConverters[kind]
-			typeConverter, typeConverterExists := typeConverters[field.Type]
-			customConverter, customConverterExists := cfg.Parsers[field.Type]
-			if typeConverter != nil {
-				converter = typeConverter
-			} else if customConverter != nil {
-				converter = customConverter
-			}
+			continue
+		}
 
-			// if there is no standard converter, and no user provided convert return an error
-			if !converterExists && !customConverterExists && !typeConverterExists {
-				return nil, fmt.Errorf("field %s of type %s is not supported", field.Name, field.Type)
-			}
-
+		kindParser, exists := kindParsers[kind]
+		if exists {
 			// convert the value from a string to the fields type
-			if err = converter(fieldConfig, fieldValue, rv); err != nil {
+			if err = kindParser(fieldConfig, fieldValue, rv); err != nil {
 				return nil, err
 			}
+			continue
 		}
+
+		parsers := mergeMap(typeParsers, cfg.Parsers)
+		parser, exists := parsers[field.Type]
+		if exists {
+			// convert the value from a string to the fields type
+			if err = parser(fieldConfig, fieldValue, rv); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		return nil, fmt.Errorf("field %s of type %s has no parser", field.Name, field.Type)
 	}
 	return &z, nil
 }

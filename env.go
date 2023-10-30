@@ -100,11 +100,6 @@ func parseEnvironmentVariableExpression(expression string) (string, string, erro
 	parts := strings.SplitN(expression, "=", 2)
 	variable := strings.Trim(parts[0], " ")
 
-	// handle VARIABLE=
-	if len(parts) == 1 {
-		return variable, "", nil
-	}
-
 	// remove any quotes
 	unquoted, err := strconv.Unquote(parts[1])
 	if err != nil {

@@ -10,6 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestParseEnvironmentVariableExpression(t *testing.T) {
+	name, value, err := parseEnvironmentVariableExpression("VARIABLE=")
+	assert.Nil(t, err)
+	assert.Equal(t, "VARIABLE", name)
+	assert.Equal(t, "", value)
+}
+
 func TestFindEnvFile(t *testing.T) {
 	cwd, _ := os.Getwd()
 	defer func() {
@@ -31,6 +38,36 @@ func TestFindEnvFileNotFound(t *testing.T) {
 	path, err := FindEnvFile()
 	assert.Nil(t, err)
 	assert.Equal(t, "", path)
+}
+
+func TestLoadEnvFileNoEnvFile(t *testing.T) {
+	cwd, _ := os.Getwd()
+	os.Chdir("/")
+	defer func() {
+		os.Chdir(cwd)
+	}()
+
+	kv, err := LoadEnvFile(Config[testAllTypes]{})
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]string{}, kv)
+}
+
+func TestLoadEnvFileDoesNotExist(t *testing.T) {
+	_, err := LoadEnvFile(Config[testAllTypes]{
+		EnvFilePath: ".fake",
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "environment file does not exist: .fake", err.Error())
+	}
+}
+
+func TestLoadEnvFileInvalid(t *testing.T) {
+	_, err := LoadEnvFile(Config[testAllTypes]{
+		EnvFilePath: "testdata/.invalid",
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "invalid expression in env file: INVALID", err.Error())
+	}
 }
 
 func TestParseEnvFile(t *testing.T) {

@@ -1,6 +1,7 @@
 package confik
 
 import (
+	"net/url"
 	"os"
 	"reflect"
 	"testing"
@@ -294,4 +295,33 @@ func TestIntSlice(t *testing.T) {
 	err := handleSlice(fc, "1,2", rv)
 	assert.Nil(t, err)
 	assert.Equal(t, []int{1, 2}, res)
+}
+
+func TestIntSliceFailMixed(t *testing.T) {
+	var res []int
+	rv := reflect.ValueOf(&res).Elem()
+	fc := &FieldConfig{
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
+	}
+	err := handleSlice(fc, "1,hh", rv)
+	if assert.Error(t, err) {
+		assert.Equal(t, "test=1,hh is not a valid []int: strconv.ParseInt: parsing \"hh\": invalid syntax", err.Error())
+	}
+}
+
+func TestUrl(t *testing.T) {
+	var res url.URL
+	rv := reflect.ValueOf(&res).Elem()
+	fc := &FieldConfig{
+		ConfigTag: NewConfigTag("test"),
+		Validate:  nil,
+	}
+	err := parseUrl(fc, "test.html", rv)
+	if assert.Error(t, err) {
+		assert.Equal(t, "test=test.html invalid URL: parse \"test.html\": invalid URI for request", err.Error())
+	}
+	err = parseUrl(fc, "https://google.com", rv)
+	assert.Nil(t, err)
+	assert.Equal(t, "https://google.com", res.String())
 }

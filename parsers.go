@@ -1,6 +1,7 @@
 package confik
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -140,7 +141,7 @@ func parseString(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	strSlice := strings.Split(fieldValue, ",")
 	var unsliced = rv.Type().Elem()
-	converter, exists := kindConverters[unsliced.Kind()]
+	converter, exists := kindParsers[unsliced.Kind()]
 	if !exists {
 		return fmt.Errorf("%s is invalid: %s is not supported", fc.Name, rv.Type())
 	}
@@ -149,7 +150,7 @@ func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 		rv2 := reflect.New(unsliced).Elem()
 		err := converter(fc, v, rv2)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s=%s is not a valid %s: %w", fc.Name, fieldValue, rv.Type(), errors.Unwrap(err))
 		}
 		data = reflect.Append(data, rv2)
 	}
@@ -158,7 +159,7 @@ func handleSlice(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 }
 
 func parseUrl(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
-	u, err := url.Parse(fieldValue)
+	u, err := url.ParseRequestURI(fieldValue)
 	if err != nil {
 		return fmt.Errorf("%s=%s invalid URL: %w", fc.Name, fieldValue, err)
 	}
@@ -166,11 +167,11 @@ func parseUrl(fc *FieldConfig, fieldValue string, rv reflect.Value) error {
 	return nil
 }
 
-var typeConverters = map[reflect.Type]Parser{
+var typeParsers = map[reflect.Type]Parser{
 	reflect.TypeOf(url.URL{}): parseUrl,
 }
 
-var kindConverters = map[reflect.Kind]Parser{
+var kindParsers = map[reflect.Kind]Parser{
 	reflect.Uint:    parseUint,
 	reflect.Uint8:   parseUint8,
 	reflect.Uint16:  parseUint16,

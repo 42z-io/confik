@@ -79,6 +79,51 @@ func TestLoadFromEnvInvalidTags(t *testing.T) {
 	}
 }
 
+type testParseError struct {
+	Website url.URL
+}
+
+func TestLoadFromEnvParserError(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("WEBSITE", "aaa")
+	_, err := LoadFromEnv(Config[testParseError]{
+		UseEnvFile: false,
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "WEBSITE=aaa invalid URL: parse \"aaa\": invalid URI for request", err.Error())
+	}
+}
+
+type testKindError struct {
+	Website uint8
+}
+
+func TestLoadFromEnvKindError(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("WEBSITE", "-1")
+	_, err := LoadFromEnv(Config[testKindError]{
+		UseEnvFile: false,
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "WEBSITE=-1 is not a valid uint8: strconv.ParseUint: parsing \"-1\": invalid syntax", err.Error())
+	}
+}
+
+type testParseUnknown struct {
+	Website MyCustomType
+}
+
+func TestLoadFromEnvUnknownType(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("WEBSITE", "aaa")
+	_, err := LoadFromEnv(Config[testParseUnknown]{
+		UseEnvFile: false,
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "field Website of type confik.MyCustomType has no parser", err.Error())
+	}
+}
+
 type testUnsupportedSlice struct {
 	Custom []MyCustomType
 }

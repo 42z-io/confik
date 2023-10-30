@@ -30,6 +30,21 @@ func TestLoadFromEnvCustomValidator(t *testing.T) {
 	}
 }
 
+type testInvalidValidator struct {
+	MyField string `env:"MY_FIELD,validate=custom"`
+}
+
+func TestLoadFromEnvInvalidValidator(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("MY_FIELD", "test")
+	_, err := LoadFromEnv(Config[testInvalidValidator]{
+		UseEnvFile: false,
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "unknown validator: custom", err.Error())
+	}
+}
+
 func TestValidatorUri(t *testing.T) {
 	err := validateUri("MY_VAR", "my_value")
 	if assert.Error(t, err) {

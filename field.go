@@ -12,8 +12,8 @@ type FieldConfig struct {
 	Validate *Validator
 }
 
-func mergeMap(a map[string]Validator, b map[string]Validator) map[string]Validator {
-	merged := make(map[string]Validator)
+func mergeMap[T comparable, V any](a map[T]V, b map[T]V) map[T]V {
+	merged := make(map[T]V)
 	for k, v := range a {
 		merged[k] = v
 	}
@@ -44,7 +44,7 @@ func NewFieldConfig[T any](cfg Config[T], rv reflect.StructField) (*FieldConfig,
 	if validatorName != nil {
 		validator, exists := validators[*validatorName]
 		if !exists {
-			return &fieldConfig, nil
+			return nil, fmt.Errorf("unknown validator: %s", *validatorName)
 		}
 		fieldConfig.Validate = &validator
 	}
